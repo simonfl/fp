@@ -1,2 +1,3 @@
 ledgers/
 __pycache__/
+.venv/
