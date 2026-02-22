@@ -1,4 +1,4 @@
-from util import Ledger, Dist
+from .util import Ledger, Dist
 
 class Base(object):
 	def __init__(self):
@@ -23,12 +23,12 @@ class Base(object):
 	def _update(self):
 		pass
 
-	def start(self, year, month=0):
+	def start(self, year, month=1):
 		self.start_year = year
 		self.start_month = month
 		return self
 
-	def end(self, year, month=0):
+	def end(self, year, month=12):
 		self.end_year = year
 		self.end_month = month
 		return self
@@ -45,7 +45,7 @@ class Base(object):
 			return False
 		return True
 
-	def get():
+	def get(self):
 		return 0
 
 	def into(self, dst, amt=None):
@@ -105,15 +105,31 @@ class Account(Base):
 		if not self.is_current():
 			return 0
 		bal = self.balance()
-		if bal < amt:
-			amt = bal
-		pct = 0 if bal == 0 else self.gain / bal
-		a = amt / (1 - pct * self.tax_rate)
-		self.basis -= a * (1 - pct)
-		self.gain -= a * pct
-		if abs(amt) > 0.001:
-			self.ledger.append(Ledger(self.year, self.month, note, -amt, -a * pct * self.tax_rate, self.balance()))
-		return amt
+		if bal <= 0 or amt <= 0:
+			return 0
+
+		taxable_fraction = 0 if bal == 0 else max(0, min(1, self.gain / bal))
+		effective_tax_rate = taxable_fraction * self.tax_rate
+		max_net = bal * (1 - effective_tax_rate)
+		amt = min(amt, max_net)
+		if amt <= 0:
+			return 0
+
+		gross = amt / (1 - effective_tax_rate) if effective_tax_rate < 1 else 0
+		basis_sold = gross * (1 - taxable_fraction)
+		gain_sold = gross * taxable_fraction
+		tax_paid = max(0, gain_sold) * self.tax_rate
+		net = gross - tax_paid
+
+		self.basis -= basis_sold
+		self.gain -= gain_sold
+		if abs(self.basis) < 0.001:
+			self.basis = 0
+		if abs(self.gain) < 0.001:
+			self.gain = 0
+		if abs(net) > 0.001:
+			self.ledger.append(Ledger(self.year, self.month, note, -net, -tax_paid, self.balance()))
+		return net
 
 	def into(self, dst, amt=None):
 		if not self.is_current():
@@ -223,7 +239,7 @@ class Expense(Base):
 		super().__init__()
 		self.amt = monthly or annually / 12
 		self.base = 1.0
-		self.monthly_dist = Dist(1, variation/self.amt)
+		self.monthly_dist = Dist(1, 0) if self.amt == 0 else Dist(1, variation / self.amt)
 		self.increase = increase
 
 	def _update(self):

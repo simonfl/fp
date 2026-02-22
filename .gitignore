@@ -1,3 +1,10 @@
 ledgers/
 __pycache__/
 .venv/
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Local/private scenario inputs - keep out of git by default.
+simon_anna*.py
+simon_anna.ipynb

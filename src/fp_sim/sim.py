@@ -2,10 +2,13 @@
 import random
 import os
 from collections import defaultdict
-from util import Dist
+from .util import Dist
 
 class Model(object):
 	def __init__(self):
+		self.reset()
+
+	def reset(self):
 		self.incomes = dict()
 		self.expenses = dict()
 		self.accounts = dict()
@@ -62,11 +65,11 @@ class Model(object):
 				f.write(str(acct))
 
 class Sim(object):
-	def __init__(self, model, start, end, summary_every_n_years=10, ignore_accounts=['Income', 'RSUs']):
+	def __init__(self, model, start, end, summary_every_n_years=10, ignore_accounts=None):
 		self.model = model
 		self.start = start
 		self.end = end
-		self.ignore_accounts = ignore_accounts
+		self.ignore_accounts = ['Income', 'RSUs'] if ignore_accounts is None else ignore_accounts
 		self.summary_every_n_years = summary_every_n_years
 		self.summary = dict()
 		
@@ -86,6 +89,7 @@ class Sim(object):
 
 	def run(self, quiet=False):
 		market = Dist(0.1, 0.18)
+		self.model.reset()
 		self.model.setup()
 
 		headers = ''.join(['{:>13s}'.format(acct.name) for acct in self.accounts()])
@@ -99,7 +103,7 @@ class Sim(object):
 				self.model.update(year, month, market.get_monthly())
 				self.model.run()
 
-			if year % self.summary_every_n_years == 0:
+			if (year - self.start) % self.summary_every_n_years == 0:
 				self.summary[year] = defaultdict(int)
 				total = 0
 				for acct in self.accounts():
@@ -118,35 +122,62 @@ class MC(object):
 		self.end = end
 
 	def run_once(self):
+		self._clear_tax_buffers()
 		sim = Sim(self.model, self.start, self.end)
 		sim.run()
 
+	def _clear_tax_buffers(self):
+		try:
+			from .taxes import IncomeTax
+			for tax_name in ('federal', 'state', 'city'):
+				tax = getattr(IncomeTax, tax_name, None)
+				if tax is not None and hasattr(tax, 'clear'):
+					tax.clear()
+		except Exception:
+			pass
+
 	def run(self, n, summary_every_n_years=10):
+		if n <= 0:
+			raise ValueError('n must be > 0')
 		summary = defaultdict(lambda: defaultdict(list))
 		fails = 0
+		successes = 0
+		last_sim = None
 		for i in range(n):
 			random.seed(i)
+			self._clear_tax_buffers()
 			sim = Sim(self.model, self.start, self.end, summary_every_n_years)
+			last_sim = sim
 			try:
 				sim.run(True)
-			except:
+				successes += 1
+			except Exception:
 				fails += 1
+				self._clear_tax_buffers()
+				continue
 			for year, stats in sim.summary.items():
 				for key, val in stats.items():
 					summary[year][key].append(val)
 
+		if last_sim is None:
+			return
+
 		for year, stats in summary.items():
 			print('\n{:>18}  {:>13} {:>13} {:>13} {:>13} {:>13}'.format(year, '10%', '20%', '50%', '80%', 'Mean'))
 			for key, vals in sorted(stats.items()):
-				if len(vals) < n:
-					vals = [0] * (n - len(vals)) + vals
 				vals = sorted(vals)
+				count = len(vals)
+				p10 = vals[int((count - 1) * 0.1)]
+				p20 = vals[int((count - 1) * 0.2)]
+				p50 = vals[int((count - 1) * 0.5)]
+				p80 = vals[int((count - 1) * 0.8)]
 				print('{:>18}: {} {} {} {} {}'.format(
 					key, 
-					sim.fmt(vals[int(n * 0.1)]),
-					sim.fmt(vals[int(n * 0.2)]),
-					sim.fmt(vals[int(n * 0.5)]),
-					sim.fmt(vals[int(n * 0.8)]),
-					sim.fmt(sum(vals) / n), 
+					last_sim.fmt(p10),
+					last_sim.fmt(p20),
+					last_sim.fmt(p50),
+					last_sim.fmt(p80),
+					last_sim.fmt(sum(vals) / count),
 				))
-		print('\nFailure rate: {:.1f}%'.format(100 * fails / n))
+		print('\nSuccess rate: {:.1f}%'.format(100 * successes / n))
+		print('Failure rate: {:.1f}%'.format(100 * fails / n))
