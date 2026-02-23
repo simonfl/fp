@@ -123,9 +123,9 @@ class Account(Base):
 
 		self.basis -= basis_sold
 		self.gain -= gain_sold
-		if abs(self.basis) < 0.001:
+		if abs(self.basis) < 1e-9:
 			self.basis = 0
-		if abs(self.gain) < 0.001:
+		if abs(self.gain) < 1e-9:
 			self.gain = 0
 		if abs(net) > 0.001:
 			self.ledger.append(Ledger(self.year, self.month, note, -net, -tax_paid, self.balance()))
@@ -237,7 +237,12 @@ class Mortgage(Account):
 class Expense(Base):
 	def __init__(self, monthly=None, annually=None, variation=0, increase=None):
 		super().__init__()
-		self.amt = monthly or annually / 12
+		if monthly is not None:
+			self.amt = monthly
+		elif annually is not None:
+			self.amt = annually / 12
+		else:
+			self.amt = 0
 		self.base = 1.0
 		self.monthly_dist = Dist(1, 0) if self.amt == 0 else Dist(1, variation / self.amt)
 		self.increase = increase
@@ -255,7 +260,12 @@ class Expense(Base):
 class Transfer(Base):
 	def __init__(self, annually=None, monthly=None, increase=None):
 		super().__init__()
-		self.amt = monthly or annually / 12
+		if monthly is not None:
+			self.amt = monthly
+		elif annually is not None:
+			self.amt = annually / 12
+		else:
+			self.amt = 0
 		self.increase = increase
 
 	def _update(self):

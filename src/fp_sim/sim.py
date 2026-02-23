@@ -79,6 +79,11 @@ class Sim(object):
 			n = 0
 		return ('{:>%ds}' % width).format('${:,.0f}'.format(n))
 
+	def label(self, name, width=13):
+		if len(name) <= width:
+			return ('{:>%ds}' % width).format(name)
+		return name[: width - 3] + '...'
+
 	def accounts(self):
 		return [acct for acct in self.model.accounts.values() if not acct.name in self.ignore_accounts]
 
@@ -92,7 +97,7 @@ class Sim(object):
 		self.model.reset()
 		self.model.setup()
 
-		headers = ''.join(['{:>13s}'.format(acct.name) for acct in self.accounts()])
+		headers = ''.join([self.label(acct.name, 13) for acct in self.accounts()])
 		if not quiet:
 			print('Year' + headers + '{:>13s}'.format('Total'))
 
