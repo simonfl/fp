@@ -237,14 +237,16 @@ class Mortgage(Account):
 class Expense(Base):
 	def __init__(self, monthly=None, annually=None, variation=0, increase=None):
 		super().__init__()
+		monthly_variation = variation
 		if monthly is not None:
 			self.amt = monthly
 		elif annually is not None:
 			self.amt = annually / 12
+			monthly_variation = variation / 12
 		else:
 			self.amt = 0
 		self.base = 1.0
-		self.monthly_dist = Dist(1, 0) if self.amt == 0 else Dist(1, variation / self.amt)
+		self.monthly_dist = Dist(1, 0) if self.amt == 0 else Dist(1, monthly_variation / self.amt)
 		self.increase = increase
 
 	def _update(self):

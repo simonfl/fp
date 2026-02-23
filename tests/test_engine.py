@@ -1,8 +1,9 @@
 import pytest
 
-from fp_sim.accounts import Account, Expense, Transfer
+from fp_sim.accounts import Account, Expense, Income, Transfer
 from fp_sim.sim import MC, Model, Sim
 from fp_sim.taxes import IncomeTax
+from fp_sim.util import Dist
 
 
 class DummyAccount:
@@ -165,3 +166,36 @@ def test_withdraw_preserves_tiny_remaining_balance():
 
 	checking.keep(savings, [savings], keep_max=0.00006103515625, keep_min=0.00006103515625)
 	assert checking.balance() == pytest.approx(0.00006103515625)
+
+
+def test_annual_expense_variation_is_converted_to_monthly_scale():
+	exp = Expense(annually=120000, variation=12000)
+	assert exp.amt == pytest.approx(10000)
+	assert exp.monthly_dist.std == pytest.approx(0.1)
+
+
+def test_monthly_expense_variation_keeps_monthly_scale():
+	exp = Expense(monthly=10000, variation=1000)
+	assert exp.monthly_dist.std == pytest.approx(0.1)
+
+
+def test_sim_print_header_includes_income_expense_and_net(capsys):
+	class SmokeModel(Model):
+		def setup(self):
+			self.income("Salary", Income(annually=120000, increase=Dist(0, 0)))
+			self.account("Income", Account())
+			self.account("Checking", Account(total=10000))
+			self.expense("Living", Expense(monthly=1000))
+
+		def run(self):
+			income = self.account("Income")
+			self.income("Salary").into(income)
+			income.into(self.account("Checking"))
+			self.expense("Living").outof([self.account("Checking")])
+
+	sim = Sim(SmokeModel(), 2026, 2027, summary_every_n_years=1)
+	sim.run(quiet=False)
+	out = capsys.readouterr().out
+	assert "Income" in out
+	assert "Expense" in out
+	assert "Net" in out

@@ -96,17 +96,39 @@ class Sim(object):
 		market = Dist(0.1, 0.18)
 		self.model.reset()
 		self.model.setup()
+		income_names = set(self.model.incomes.keys())
+		expense_names = set(self.model.expenses.keys())
 
 		headers = ''.join([self.label(acct.name, 13) for acct in self.accounts()])
 		if not quiet:
-			print('Year' + headers + '{:>13s}'.format('Total'))
+			print(
+				'Year'
+				+ headers
+				+ '{:>13s}{:>13s}{:>13s}{:>13s}'.format('Total', 'Income', 'Expense', 'Net')
+			)
 
 		for year in range(self.start, self.end):
-			if not quiet:
-				print(('%d' % year) + ''.join([self.fmt(bal) for bal in self.balances()]))
+			year_income = 0.0
+			year_expense = 0.0
 			for month in range(1, 13):
+				ledger_offsets = {acct: len(acct.ledger) for acct in self.model.accounts.values()}
 				self.model.update(year, month, market.get_monthly())
 				self.model.run()
+				for acct, offset in ledger_offsets.items():
+					for item in acct.ledger[offset:]:
+						if item.note in income_names and item.amount > 0:
+							year_income += item.amount
+						elif item.note in expense_names and item.amount < 0:
+							year_expense += -item.amount
+
+			if not quiet:
+				print(
+					('%d' % year)
+					+ ''.join([self.fmt(bal) for bal in self.balances()])
+					+ self.fmt(year_income)
+					+ self.fmt(year_expense)
+					+ self.fmt(year_income - year_expense)
+				)
 
 			if (year - self.start) % self.summary_every_n_years == 0:
 				self.summary[year] = defaultdict(int)
@@ -118,7 +140,13 @@ class Sim(object):
 					self.summary[year]['Total'] = total
 
 		if not quiet:
-			print(('%d' % self.end) + ''.join([self.fmt(bal) for bal in self.balances()]))
+			print(
+				('%d' % self.end)
+				+ ''.join([self.fmt(bal) for bal in self.balances()])
+				+ self.fmt(0)
+				+ self.fmt(0)
+				+ self.fmt(0)
+			)
 
 class MC(object):
 	def __init__(self, model, start, end):
