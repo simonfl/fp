@@ -197,5 +197,6 @@ def test_sim_print_header_includes_income_expense_and_net(capsys):
 	sim.run(quiet=False)
 	out = capsys.readouterr().out
 	assert "Income" in out
+	assert "PostTax" in out
 	assert "Expense" in out
 	assert "Net" in out
