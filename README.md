@@ -13,7 +13,7 @@ This project models monthly cash flow across:
 - simple progressive taxes
 - Monte Carlo market variation
 
-You define a scenario as a `Model` subclass (see `examples/main.py` or `main.py`) and run:
+You define a scenario as a `Model` subclass (see `examples/baseline_family.py` or `main.py`) and run:
 
 - one deterministic seeded simulation output table
 - many Monte Carlo runs with percentile summaries
@@ -49,14 +49,14 @@ Windows (PowerShell):
 
 ```powershell
 .venv\Scripts\activate
-python examples/main.py
+python examples/baseline_family.py
 ```
 
 macOS/Linux (bash/zsh):
 
 ```bash
 source .venv/bin/activate
-python examples/main.py
+python examples/baseline_family.py
 ```
 
 Quick-start example:
@@ -64,18 +64,23 @@ Quick-start example:
 Windows (PowerShell):
 
 ```powershell
-uv run --python .venv\Scripts\python.exe examples/main.py
+uv run --python .venv\Scripts\python.exe examples/baseline_family.py
 ```
 
 macOS/Linux (bash/zsh):
 
 ```bash
-uv run --python .venv/bin/python examples/main.py
+uv run --python .venv/bin/python examples/baseline_family.py
 ```
 
 Other scenario entrypoints:
 
 - `main.py`
+- `examples/baseline_family.py`
+- `examples/dual_income_nyc_family.py`
+- `examples/single_parent_public_service.py`
+- `examples/small_business_owner.py`
+- `examples/early_retiree_coastfire.py`
 
 These scripts are example consumers of the core engine, not part of the packaged library API.
 
