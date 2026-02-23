@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 
-from sim import Model, MC
-from util import Dist, Ledger
-from taxes import IncomeTax
-from accounts import Income, RSU, Account, Mortgage, Expense, Transfer
+from fp_sim.sim import Model, MC
+from fp_sim.util import Dist, Ledger
+from fp_sim.taxes import IncomeTax
+from fp_sim.accounts import Income, RSU, Account, Mortgage, Expense, Transfer
 
 class Model1(Model):
 	def __init__(self):
@@ -140,15 +140,20 @@ class Model1(Model):
 		etrade.sweep(ml, 250000)
 
 
-model = Model1()
-mc = MC(model, 2021, 2070)
+def main():
+	model = Model1()
+	mc = MC(model, 2021, 2070)
 
-# Run a single simulation and display yearly account totals
-mc.run_once()
+	# Run a single simulation and display yearly account totals
+	mc.run_once()
 
-# Write out ledgers files containing all individual transactions for the latest simulation run
-model.report('ledgers')
+	# Write out ledgers files containing all individual transactions for the latest simulation run
+	model.report('ledgers')
 
-# Run 100 simulations and summarize the range of outcomes
-mc.run(100)
+	# Run 100 simulations and summarize the range of outcomes
+	mc.run(100)
+
+
+if __name__ == '__main__':
+	main()
 
