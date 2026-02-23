@@ -28,3 +28,9 @@ python .\examples\early_retiree_coastfire.py
 ```
 
 These scripts call `mc.run_once()` and `mc.run(100)` by default.
+
+Run all examples at once (no temp directory required):
+
+```powershell
+python .\examples\run_all_examples.py
+```

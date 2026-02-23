@@ -103,7 +103,6 @@ class DualIncomeNycFamily(Model):
 
         self.transfer("Alex 401k contribution").go([gross_income], alex_401k)
         self.transfer("Jordan 401k contribution").go([gross_income], jordan_401k)
-        self.transfer("Backdoor Roth contribution").go([gross_income], roth)
 
         self.transfer("Retirement draw pre-tax").go(retirement_accounts, gross_income)
 
@@ -123,6 +122,7 @@ class DualIncomeNycFamily(Model):
 
         gross_income.into(checking)
         gross_rsus.into(brokerage)
+        self.transfer("Backdoor Roth contribution").go([checking, brokerage], roth)
 
         for exp in self.expenses.values():
             if exp.name == "Private school":

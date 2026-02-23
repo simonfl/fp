@@ -80,7 +80,6 @@ class SingleParentPublicService(Model):
         self.income("Pension income").into(gross_income)
 
         self.transfer("457b contribution").go([gross_income], acct_457b)
-        self.transfer("Roth contribution").go([gross_income], roth)
 
         self.transfer("Retirement draw").go(retirement_accounts, gross_income)
 
@@ -97,6 +96,7 @@ class SingleParentPublicService(Model):
         IncomeTax.city.commit()
 
         gross_income.into(checking)
+        self.transfer("Roth contribution").go([checking, brokerage], roth)
 
         for exp in self.expenses.values():
             if exp.name == "College":

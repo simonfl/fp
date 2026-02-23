@@ -71,7 +71,6 @@ class SmallBusinessOwner(Model):
         self.income("Rental income").into(gross_income)
 
         self.transfer("SEP contribution").go([gross_income], sep_ira)
-        self.transfer("Roth solo contribution").go([gross_income], solo_roth)
         self.transfer("Retirement draw").go(retirement_accounts, gross_income)
 
         IncomeTax.federal.calculate([gross_income])
@@ -83,6 +82,7 @@ class SmallBusinessOwner(Model):
         IncomeTax.city.commit()
 
         gross_income.into(operating_cash)
+        self.transfer("Roth solo contribution").go([operating_cash, taxable], solo_roth)
 
         for exp in self.expenses.values():
             exp.outof(expense_accounts)
